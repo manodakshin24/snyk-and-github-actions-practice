@@ -35,7 +35,7 @@ jobs:
           snyk --version
 
       - name: Run Snyk to check for vulnerabilities
-        if: ${{ secrets.SNYK_TOKEN != '' }}
+        if: ${{ env.SNYK_TOKEN != '' }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
