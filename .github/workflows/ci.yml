@@ -1,0 +1,49 @@
+name: Python Script CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  run-script-and-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Install Snyk CLI
+        run: |
+          curl --compressed -o snyk https://static.snyk.io/cli/latest/snyk-linux
+          chmod +x snyk
+          sudo mv snyk /usr/local/bin/snyk
+          snyk --version
+
+      - name: Run Snyk to check for vulnerabilities
+        if: ${{ env.SNYK_TOKEN != '' }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -f requirements.txt ]; then
+            snyk test --file=requirements.txt --package-manager=pip --severity-threshold=high
+          else
+            echo "requirements.txt not found, skipping Snyk test"
+          fi
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Run script
+        run: python main.py
